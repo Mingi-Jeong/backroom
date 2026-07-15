@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사주 서비스 - Backroom</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Malgun Gothic', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        h1 { text-align: center; font-size: 2.5em; color: #e94560; margin-bottom: 10px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 40px; }
+        .card { background: #16213e; border-radius: 16px; padding: 30px; margin-bottom: 30px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        h2 { color: #e94560; margin-bottom: 20px; font-size: 1.4em; border-left: 4px solid #e94560; padding-left: 12px; }
+        .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .form-group { flex: 1; min-width: 120px; }
+        label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 10px 12px; background: #0f3460; border: 1px solid #1a4a7a; border-radius: 8px; color: #eee; font-size: 1em; }
+        input:focus, select:focus { outline: none; border-color: #e94560; }
+        .btn { display: inline-block; padding: 14px 40px; background: #e94560; color: #fff; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: background 0.3s; }
+        .btn:hover { background: #c73e54; }
+        .btn-secondary { background: #0f3460; }
+        .btn-secondary:hover { background: #1a4a7a; }
+        .text-center { text-align: center; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 30px; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: #0f3460; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.3s; }
+        .tab.active { background: #e94560; }
+        .tab:hover { opacity: 0.8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .result-card { background: #0f3460; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .saju-display { font-size: 1.8em; text-align: center; padding: 20px 0; letter-spacing: 4px; }
+        .saju-display .pillar { display: inline-block; padding: 10px 16px; margin: 0 4px; background: #1a1a2e; border-radius: 8px; }
+        .saju-display .pillar .gan { color: #e94560; }
+        .saju-display .pillar .ji { color: #4ecca3; }
+        .pillar-label { font-size: 0.5em; display: block; text-align: center; color: #888; margin-top: 4px; }
+        .element-bar { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+        .element-bar .label { width: 30px; font-weight: bold; }
+        .element-bar .bar { height: 24px; border-radius: 4px; transition: width 0.5s; min-width: 24px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.8em; }
+        .harmony-list { list-style: none; padding: 0; }
+        .harmony-list li { padding: 8px 12px; margin: 4px 0; background: #1a1a2e; border-radius: 6px; font-size: 0.95em; }
+        .daeun-table { width: 100%; border-collapse: collapse; }
+        .daeun-table th, .daeun-table td { padding: 8px 12px; border: 1px solid #1a4a7a; text-align: center; }
+        .daeun-table th { background: #e94560; }
+        .compat-score { font-size: 2.5em; text-align: center; padding: 20px; }
+        .compat-level { text-align: center; font-size: 1.3em; padding: 8px 20px; border-radius: 8px; display: inline-block; margin: 0 auto; }
+        .hidden { display: none; }
+        #loading { text-align: center; padding: 40px; }
+        #loading .spinner { width: 40px; height: 40px; border: 4px solid #0f3460; border-top-color: #e94560; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .mt-20 { margin-top: 20px; }
+        .mb-10 { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔮 사주 서비스</h1>
+        <p class="subtitle">Backroom - 사주팔자 · 오행 · 대운 · 궁합 분석</p>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('single')">사주 분석</div>
+            <div class="tab" onclick="switchTab('compat')">궁합</div>
+        </div>
+
+        <div id="tab-single" class="tab-content active">
+            <div class="card">
+                <h2>생년월일시 입력</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>이름</label>
+                        <input type="text" id="name" placeholder="이름">
+                    </div>
+                    <div class="form-group">
+                        <label>성별</label>
+                        <select id="gender"><option value="남">남</option><option value="여">여</option></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>년</label><input type="number" id="year" value="2000"></div>
+                    <div class="form-group"><label>월</label><input type="number" id="month" value="1" min="1" max="12"></div>
+                    <div class="form-group"><label>일</label><input type="number" id="day" value="1" min="1" max="31"></div>
+                    <div class="form-group"><label>시</label>
+                        <select id="hour">
+                            <option value="0">자시 (23:00~00:59)</option>
+                            <option value="2">축시 (01:00~02:59)</option>
+                            <option value="4">인시 (03:00~04:59)</option>
+                            <option value="6">묘시 (05:00~06:59)</option>
+                            <option value="8">진시 (07:00~08:59)</option>
+                            <option value="10">사시 (09:00~10:59)</option>
+                            <option value="12" selected>오시 (11:00~12:59)</option>
+                            <option value="14">미시 (13:00~14:59)</option>
+                            <option value="16">신시 (15:00~16:59)</option>
+                            <option value="18">유시 (17:00~18:59)</option>
+                            <option value="20">술시 (19:00~20:59)</option>
+                            <option value="22">해시 (21:00~22:59)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-center mt-20"><button class="btn" onclick="analyze()">사주 분석하기</button></div>
+            </div>
+
+            <div id="result" class="hidden">
+                <div class="card" id="saju-card"><h2>사주팔자</h2><div class="saju-display" id="saju-display"></div></div>
+                <div class="card" id="element-card"><h2>오행 분석</h2><div id="element-result"></div></div>
+                <div class="card" id="harmony-card"><h2>오행 조화</h2><ul class="harmony-list" id="harmony-list"></ul></div>
+                <div class="card" id="daeun-card"><h2>대운 · 세운</h2><div id="daeun-result"></div></div>
+            </div>
+            <div id="loading" class="hidden"><div class="spinner"></div><p>분석 중...</p></div>
+        </div>
+
+        <div id="tab-compat" class="tab-content">
+            <div class="card">
+                <h2>궁합 분석</h2>
+                <p class="mb-10">두 사람의 생년월일시를 입력하세요.</p>
+                <div class="form-row"><div class="form-group"><label>첫 번째 이름</label><input type="text" id="c1-name" placeholder="이름"></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>년</label><input type="number" id="c1-year" value="2000"></div>
+                    <div class="form-group"><label>월</label><input type="number" id="c1-month" value="1" min="1" max="12"></div>
+                    <div class="form-group"><label>일</label><input type="number" id="c1-day" value="1" min="1" max="31"></div>
+                    <div class="form-group"><label>시</label><select id="c1-hour">[options]</select></div>
+                </div>
+                <hr style="border-color:#1a4a7a;margin:20px 0;">
+                <div class="form-row"><div class="form-group"><label>두 번째 이름</label><input type="text" id="c2-name" placeholder="이름"></div></div>
+                <div class="form-row">
+                    <div class="form-group"><label>년</label><input type="number" id="c2-year" value="2000"></div>
+                    <div class="form-group"><label>월</label><input type="number" id="c2-month" value="1" min="1" max="12"></div>
+                    <div class="form-group"><label>일</label><input type="number" id="c2-day" value="1" min="1" max="31"></div>
+                    <div class="form-group"><label>시</label><select id="c2-hour">[options]</select></div>
+                </div>
+                <div class="text-center mt-20"><button class="btn" onclick="analyzeCompat()">궁합 분석하기</button></div>
+            </div>
+            <div id="compat-result" class="hidden">
+                <div class="card"><h2>궁합 결과</h2><div id="compat-detail"></div></div>
+            </div>
+            <div id="compat-loading" class="hidden"><div class="spinner"></div><p>분석 중...</p></div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            if (tab === 'single') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('tab-single').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('tab-compat').classList.add('active');
+            }
+        }
+
+        function getHourOptions(prefix) {
+            const opts = [
+                [0,'자시 (23:00~00:59)'],[2,'축시 (01:00~02:59)'],[4,'인시 (03:00~04:59)'],[6,'묘시 (05:00~06:59)'],
+                [8,'진시 (07:00~08:59)'],[10,'사시 (09:00~10:59)'],[12,'오시 (11:00~12:59)'],[14,'미시 (13:00~14:59)'],
+                [16,'신시 (15:00~16:59)'],[18,'유시 (17:00~18:59)'],[20,'술시 (19:00~20:59)'],[22,'해시 (21:00~22:59)']
+            ];
+            let html = '';
+            opts.forEach(o => { html += `<option value="${o[0]}" ${o[0]===12?'selected':''}>${o[1]}</option>`; });
+            document.getElementById(prefix + '-hour').innerHTML = html;
+        }
+        getHourOptions('c1');
+        getHourOptions('c2');
+
+        function analyze() {
+            const data = {
+                name: document.getElementById('name').value,
+                year: parseInt(document.getElementById('year').value),
+                month: parseInt(document.getElementById('month').value),
+                day: parseInt(document.getElementById('day').value),
+                hour: parseInt(document.getElementById('hour').value),
+                gender: document.getElementById('gender').value,
+                current_year: 2026,
+            };
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+
+            fetch('/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) })
+                .then(r => r.json()).then(d => {
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('result').classList.remove('hidden');
+                    renderSaju(d);
+                    renderElements(d);
+                    renderHarmony(d);
+                    renderDaeun(d);
+                });
+        }
+
+        function renderSaju(d) {
+            const p = d.saju;
+            const labels = {year:'년', month:'월', day:'일', hour:'시'};
+            let html = '';
+            ['year','month','day','hour'].forEach(k => {
+                html += `<span class="pillar"><span class="gan">${p[k].stem}</span><span class="ji">${p[k].branch}</span><span class="pillar-label">${labels[k]}${p[k].stem}${p[k].branch}</span></span>`;
+            });
+            document.getElementById('saju-display').innerHTML = html;
+        }
+
+        function renderElements(d) {
+            const e = d.elements;
+            const colors = {'목':'#4ecca3', '화':'#e94560', '토':'#f0a500', '금':'#e8e8e8', '수':'#3d84b8'};
+            const names = {'목':'木','화':'火','토':'土','금':'金','수':'水'};
+            let html = '';
+            ['목','화','토','금','수'].forEach(el => {
+                const cnt = e.counts[el];
+                const pct = Math.min(cnt * 25, 100);
+                html += `<div class="element-bar"><span class="label">${names[el]}</span><div class="bar" style="width:${pct}%;background:${colors[el]}">${cnt}</div></div>`;
+            });
+            html += `<p style="margin-top:12px;color:#aaa">음양: ${e.balance} (☯ 양 ${e.umyang.양}, 음 ${e.umyang.음})</p>`;
+            document.getElementById('element-result').innerHTML = html;
+        }
+
+        function renderHarmony(d) {
+            const list = document.getElementById('harmony-list');
+            list.innerHTML = d.harmony.map(h => `<li>${h}</li>`).join('');
+        }
+
+        function renderDaeun(d) {
+            const du = d.daeun;
+            let html = `<p>대운 방향: ${du.direction} | 시작: ${du.daeun_start_age}</p>`;
+            html += `<p>세운: ${du.seun}</p>`;
+            html += `<table class="daeun-table" style="margin-top:12px"><tr><th>나이</th>`;
+            du.daeuns.forEach(dd => { html += `<th>${dd.age}</th>`; });
+            html += `</tr><tr><td>대운</td>`;
+            du.daeuns.forEach(dd => { html += `<td>${dd.ganji}</td>`; });
+            html += `</tr></table>`;
+            document.getElementById('daeun-result').innerHTML = html;
+        }
+
+        function analyzeCompat() {
+            const data = {
+                data: [
+                    { name: document.getElementById('c1-name').value, year: parseInt(document.getElementById('c1-year').value), month: parseInt(document.getElementById('c1-month').value), day: parseInt(document.getElementById('c1-day').value), hour: parseInt(document.getElementById('c1-hour').value) },
+                    { name: document.getElementById('c2-name').value, year: parseInt(document.getElementById('c2-year').value), month: parseInt(document.getElementById('c2-month').value), day: parseInt(document.getElementById('c2-day').value), hour: parseInt(document.getElementById('c2-hour').value) },
+                ]
+            };
+            document.getElementById('compat-loading').classList.remove('hidden');
+            document.getElementById('compat-result').classList.add('hidden');
+
+            fetch('/compatibility', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) })
+                .then(r => r.json()).then(d => {
+                    document.getElementById('compat-loading').classList.add('hidden');
+                    document.getElementById('compat-result').classList.remove('hidden');
+                    const c = d.compatibility;
+                    const pct = Math.round(c.score / c.max_score * 100);
+                    const colors = {'매우 좋음':'#4ecca3', '좋음':'#3d84b8', '보통':'#f0a500', '주의':'#e94560', '어려움':'#ff6b6b'};
+                    let html = `<div class="compat-score">${pct}점</div>`;
+                    html += `<div class="text-center"><span class="compat-level" style="background:${colors[c.level]}">${c.level}</span></div>`;
+                    html += `<ul class="harmony-list mt-20">`;
+                    c.details.forEach(s => { html += `<li>${s}</li>`; });
+                    html += `</ul>`;
+                    document.getElementById('compat-detail').innerHTML = html;
+                });
+        }
+    </script>
+</body>
+</html>
